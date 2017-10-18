@@ -26,6 +26,7 @@ class TestClip(unittest.TestCase):
             elif 0.74 < self.x[ind] < 0.76:
                 self.x[ind] = 0.5
         self.gy = numpy.random.uniform(-1, 1, self.shape).astype(self.dtype)
+        self.ggx = numpy.random.uniform(-1, 1, self.shape).astype(self.dtype)
         self.x_min = -0.75
         self.x_max = 0.75
 
