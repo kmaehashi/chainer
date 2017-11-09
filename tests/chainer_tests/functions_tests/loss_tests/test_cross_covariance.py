@@ -9,7 +9,6 @@ from chainer import functions
 from chainer import gradient_check
 from chainer import testing
 from chainer.testing import attr
-from chainer.testing import condition
 
 
 def _cross_covariance(y, z):
@@ -44,6 +43,8 @@ class TestCrossCovariance(unittest.TestCase):
             gloss_shape = (3, 2)
         self.gloss = numpy.random.uniform(
             -1, 1, gloss_shape).astype(numpy.float32)
+        self.gy = numpy.random.uniform(-1, 1, (4, 3)).astype(numpy.float32)
+        self.gz = numpy.random.uniform(-1, 1, (4, 2)).astype(numpy.float32)
 
     def check_forward(self, y_data, z_data):
         y = chainer.Variable(y_data)
@@ -61,18 +62,19 @@ class TestCrossCovariance(unittest.TestCase):
         numpy.testing.assert_allclose(
             loss_expect, loss_value, rtol=1e-4, atol=1e-4)
 
-    @condition.retry(3)
     def test_forward_cpu(self):
         self.check_forward(self.y, self.z)
 
     @attr.gpu
-    @condition.retry(3)
     def test_forward_gpu(self):
         self.check_forward(cuda.to_gpu(self.y), cuda.to_gpu(self.z))
 
     def check_backward(self, y_data, z_data, gloss_data):
+        def f(y, z):
+            return functions.cross_covariance(y, z, self.reduce)
+
         gradient_check.check_backward(
-            functions.CrossCovariance(self.reduce), (y_data, z_data),
+            f, (y_data, z_data),
             gloss_data, eps=0.02, rtol=1e-4, atol=1e-4)
 
     def check_type(self, y_data, z_data, gloss_data):
@@ -84,7 +86,6 @@ class TestCrossCovariance(unittest.TestCase):
         self.assertEqual(y_data.dtype, y.grad.dtype)
         self.assertEqual(z_data.dtype, z.grad.dtype)
 
-    @condition.retry(3)
     def test_backward_cpu(self):
         self.check_backward(self.y, self.z, self.gloss)
 
@@ -97,10 +98,29 @@ class TestCrossCovariance(unittest.TestCase):
                         cuda.to_gpu(self.gloss))
 
     @attr.gpu
-    @condition.retry(3)
     def test_backward_gpu(self):
         self.check_backward(cuda.to_gpu(self.y), cuda.to_gpu(self.z),
                             cuda.to_gpu(self.gloss))
+
+    def check_double_backward(
+            self, y_data, z_data, gloss_data, gy_data, gz_data):
+        def f(y, z):
+            return functions.cross_covariance(y, z, self.reduce)
+
+        gradient_check.check_double_backward(
+            f, (y_data, z_data), gloss_data, (gy_data, gz_data),
+            eps=0.02, rtol=1e-4, atol=1e-4)
+
+    def test_double_backward_cpu(self):
+        self.check_double_backward(
+            self.y, self.z, self.gloss, self.gy, self.gz)
+
+    @attr.gpu
+    def test_double_backward_gpu(self):
+        self.check_double_backward(
+            cuda.to_gpu(self.y), cuda.to_gpu(self.z),
+            cuda.to_gpu(self.gloss), cuda.to_gpu(self.gy),
+            cuda.to_gpu(self.gz))
 
 
 class TestCrossCovarianceInvalidReductionOption(unittest.TestCase):

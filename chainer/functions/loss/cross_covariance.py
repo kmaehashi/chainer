@@ -1,20 +1,17 @@
 import numpy
 
 from chainer import cuda
-from chainer import function
+from chainer import function_node
+import chainer.functions
 from chainer import utils
 from chainer.utils import type_check
 
 
-class CrossCovariance(function.Function):
+class CrossCovariance(function_node.FunctionNode):
 
     """Cross-covariance loss."""
 
     def __init__(self, reduce='half_squared_sum'):
-        self.y_centered = None
-        self.z_centered = None
-        self.covariance = None
-
         if reduce not in ('half_squared_sum', 'no'):
             raise ValueError(
                 "only 'half_squared_sum' and 'no' are valid "
@@ -37,32 +34,40 @@ class CrossCovariance(function.Function):
     def forward(self, inputs):
         xp = cuda.get_array_module(*inputs)
         y, z = inputs
+        self.retain_inputs((0, 1))
 
-        self.y_centered = y - y.mean(axis=0, keepdims=True)
-        self.z_centered = z - z.mean(axis=0, keepdims=True)
-        self.covariance = self.y_centered.T.dot(self.z_centered)
-        self.covariance /= len(y)
+        y_centered = y - y.mean(axis=0, keepdims=True)
+        z_centered = z - z.mean(axis=0, keepdims=True)
+        covariance = y_centered.T.dot(z_centered)
+        covariance /= len(y)
 
         if self.reduce == 'half_squared_sum':
-            cost = xp.vdot(self.covariance, self.covariance)
+            cost = xp.vdot(covariance, covariance)
             cost *= y.dtype.type(0.5)
             return utils.force_array(cost),
         else:
-            return self.covariance,
+            return covariance,
 
-    def backward(self, inputs, grad_outputs):
-        y, z = inputs
+    def backward(self, indexes, grad_outputs):
+        y, z = self.get_retained_inputs()
         gcost, = grad_outputs
         gcost_div_n = gcost / gcost.dtype.type(len(y))
 
+        y_centered = y - chainer.functions.broadcast_to(
+            chainer.functions.mean(y, axis=0, keepdims=True), y.shape)
+        z_centered = z - chainer.functions.broadcast_to(
+            chainer.functions.mean(z, axis=0, keepdims=True), z.shape)
+        covariance = chainer.functions.matmul(y_centered.T, z_centered)
+        covariance /= len(y)
+
         if self.reduce == 'half_squared_sum':
-            gy = self.z_centered.dot(self.covariance.T)
-            gz = self.y_centered.dot(self.covariance)
-            gy *= gcost_div_n
-            gz *= gcost_div_n
+            gy = chainer.functions.matmul(z_centered, covariance.T)
+            gz = chainer.functions.matmul(y_centered, covariance)
+            gy *= chainer.functions.broadcast_to(gcost_div_n, gy.shape)
+            gz *= chainer.functions.broadcast_to(gcost_div_n, gz.shape)
         else:
-            gy = self.z_centered.dot(gcost_div_n.T)
-            gz = self.y_centered.dot(gcost_div_n)
+            gy = chainer.functions.matmul(z_centered, gcost_div_n.T)
+            gz = chainer.functions.matmul(y_centered, gcost_div_n)
         return gy, gz
 
 
@@ -102,4 +107,4 @@ def cross_covariance(y, z, reduce='half_squared_sum'):
        See https://arxiv.org/abs/1412.6583v3 for details.
 
     """
-    return CrossCovariance(reduce)(y, z)
+    return CrossCovariance(reduce).apply((y, z))[0]
