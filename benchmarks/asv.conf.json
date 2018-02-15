@@ -66,6 +66,7 @@
         //"Cython": [],
         "cython": [],
         "cupy": [],
+        "ideep4py": [],
     },
 
     // Combinations of libraries/python versions can be excluded/included

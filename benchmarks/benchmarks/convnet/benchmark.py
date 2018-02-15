@@ -1,12 +1,18 @@
 import chainer
 
+try:
+    from chainer.backends import intel64
+    _IDEEP_AVAILABLE = True
+except ImportError:
+    _IDEEP_AVAILABLE = False
+
 import cupy
 
 from ..utils import xp, parameterize
 
 
 class _ConvnetBase(object):
-    def setup(self, xp, arch, batchsize):
+    def setup(self, xp, arch, batchsize, use_ideep):
         if arch == 'alexnet':
             from .nets import alex
             model = alex.Alex()
@@ -24,13 +30,20 @@ class _ConvnetBase(object):
 
         if xp is cupy:
             model.to_gpu()
+        elif _IDEEP_AVAILABLE and use_ideep:
+            model.to_intel64()
 
         self.model = model
 
         workspace_size = int(1 * 2**30)
         chainer.cuda.set_max_workspace_size(workspace_size)
 
-    def time_all(self, xp, arch, batchsize):
+    def time_all(self, xp, arch, batchsize, use_ideep):
+        use_ideep_config = 'auto' if use_ideep else 'never'
+        with chainer.using_config('use_ideep', use_ideep_config):
+            self._time_all(xp, arch, batchsize)
+
+    def _time_all(self, xp, arch, batchsize):
         model = self.model
 
         optimizer = chainer.optimizers.SGD(lr=0.01)
@@ -60,6 +73,7 @@ class _ConvnetBase(object):
 @parameterize([
     ('arch', ['vgga']),
     ('batchsize', [64]),
+    ('use_ideep', [False]),
 ])
 class ConvnetVGGA(_ConvnetBase):
     pass
@@ -69,6 +83,17 @@ class ConvnetVGGA(_ConvnetBase):
 @parameterize([
     ('arch', ['alexnet', 'googlenet', 'overfeat']),
     ('batchsize', [128]),
+    ('use_ideep', [False]),
 ])
 class ConvnetOthers(_ConvnetBase):
+    pass
+
+
+@xp(cupy=False)
+@parameterize([
+    ('arch', ['alexnet', 'googlenet', 'overfeat']),
+    ('batchsize', [8]),
+    ('use_ideep', [True, False]),
+])
+class ConvnetOthersNumPy(_ConvnetBase):
     pass
