@@ -10,7 +10,7 @@ from ..utils import parameterize, have_ideep
 
 
 class _ConvnetBase(object):
-    timeout = 300
+    timeout = 600
     number = 1
 
     def setup(self, arch, batchsize, mode):
@@ -70,23 +70,22 @@ class _ConvnetBase(object):
         self._model = model
         self._out = out
         self._use_ideep = 'auto' if ideep else 'never'
-        print('setup')
 
     def time_forward(self, arch, batchsize, mode):
         with chainer.using_config('use_ideep', self._use_ideep):
             self._model.forward(self._x)
-        print('forward')
 
     def time_backward(self, arch, batchsize, mode):
         with chainer.using_config('use_ideep', self._use_ideep):
             self._out.backward()
-        print('backward')
 
+
+_modes = ['gpu', 'cpu'] + (['cpu-ideep'] if have_ideep() else [])
 
 @parameterize([
     ('arch', ['vgga']),
     ('batchsize', [64]),
-    ('mode', ['cpu']),
+    ('mode', _modes),
 ])
 class ConvnetVGGA(_ConvnetBase):
     pass
@@ -95,7 +94,7 @@ class ConvnetVGGA(_ConvnetBase):
 @parameterize([
     ('arch', ['alexnet', 'googlenet', 'overfeat']),
     ('batchsize', [128]),
-    ('mode', ['gpu', 'cpu', 'cpu-ideep']),
+    ('mode', _modes),
 ])
 class ConvnetOthers(_ConvnetBase):
     pass

@@ -49,7 +49,6 @@ class MLPApplication(object):
             train_iter, optimizer, device=gpu)
         trainer = training.Trainer(updater, (epoch, 'epoch'))
         trainer.extend(extensions.Evaluator(test_iter, model, device=gpu))
-        trainer.extend(extensions.LogReport())
 
         with chainer.using_config('use_ideep', 'auto' if ideep else 'never'):
             trainer.run()
@@ -64,7 +63,7 @@ _modes = ['gpu', 'cpu'] + (['cpu-ideep'] if have_ideep() else [])
 class TimeMLP(object):
     timeout = 360
 
-    def time_mlp(self, mode, units):
+    def time_overall(self, mode, units):
         app = MLPApplication()
         gpu = 0 if mode == 'gpu' else -1
         ideep = True if mode == 'cpu-ideep' else False

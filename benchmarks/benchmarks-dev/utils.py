@@ -70,18 +70,15 @@ def xp(cupy=True, numpy=True):
 
 def _inject_xp(klass, modules):
     klass = parameterize([('xp', modules)], _head=True)(klass)
-
-    # Wrap functions to overwrite parameters given in string ('cupy', 'numpy')
-    # with the actual module reference.
     members = inspect.getmembers(
         klass,
         predicate=lambda _: inspect.ismethod(_) or inspect.isfunction(_))
 
     for (name, func) in members:
         if name == 'setup' or name.startswith('time_'):
-            def _wrap_func(target):
-                @wraps(target)
-                def wrapped_time_func(self, xp, *args, **kwargs):
+            def _wrap_func(orig):
+                @wraps(orig)
+                def wrapped_func(self, xp, *args, **kwargs):
                     if xp == 'cupy':
                         xp = cupy
                         event = cupy.cuda.stream.Event()
@@ -91,18 +88,18 @@ def _inject_xp(klass, modules):
                     else:
                         raise AssertionError(xp)
 
-                    target(self, xp, *args, **kwargs)
+                    orig(self, xp, *args, **kwargs)
 
                     if event is not None:
                         event.synchronize()
-                return wrapped_time_func
+                return wrapped_func
             setattr(klass, name, _wrap_func(func))
 
     return klass
 
 
 def have_ideep():
-    """Tests if iDeep is available in the current benchmark configuration.
+    """Tests if iDeep can be used in the current benchmark configuration.
 
     If you intend to write benchmark for iDeep, first make sure that iDeep
     is available using this function. This makes possible to run the same
