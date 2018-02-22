@@ -1,18 +1,22 @@
 import chainer
-
-try:
-    from chainer.backends import intel64
-    _IDEEP_AVAILABLE = True
-except ImportError:
-    _IDEEP_AVAILABLE = False
+from chainer import cuda
+from chainer import optimizers
 
 import cupy
+import numpy
 
-from ..utils import xp, parameterize
+import ideep4py
+from ..utils import parameterize, have_ideep
 
 
 class _ConvnetBase(object):
-    def setup(self, xp, arch, batchsize, use_ideep):
+    timeout = 300
+    number = 1
+
+    def setup(self, arch, batchsize, mode):
+        xp = cupy if mode == 'gpu' else numpy
+        ideep = True if mode == 'cpu-ideep' else False
+
         if arch == 'alexnet':
             from .nets import alex
             model = alex.Alex()
@@ -30,33 +34,27 @@ class _ConvnetBase(object):
 
         if xp is cupy:
             model.to_gpu()
-        elif _IDEEP_AVAILABLE and use_ideep:
+        elif ideep:
+            assert have_ideep()
             model.to_intel64()
 
-        self.model = model
+        # Setup optimizer
+        optimizer = optimizers.SGD(lr=0.01)
+        optimizer.setup(model)
 
         workspace_size = int(1 * 2**30)
         chainer.cuda.set_max_workspace_size(workspace_size)
 
-    def time_all(self, xp, arch, batchsize, use_ideep):
-        use_ideep_config = 'auto' if use_ideep else 'never'
-        with chainer.using_config('use_ideep', use_ideep_config):
-            self._time_all(xp, arch, batchsize)
-
-    def _time_all(self, xp, arch, batchsize):
-        model = self.model
-
-        optimizer = chainer.optimizers.SGD(lr=0.01)
-        optimizer.setup(model)
-
         chainer.config.train = True
         chainer.config.use_cudnn = 'always'
 
+        # Trainer
         data = xp.ndarray((batchsize, 3, model.insize,
                            model.insize), dtype=xp.float32)
         data.fill(33333)
 
         x = xp.asarray(data)
+
         if arch == 'googlenet':
             out1, out2, out3 = model.forward(x)
             out = out1 + out2 + out3
@@ -68,32 +66,36 @@ class _ConvnetBase(object):
         model.cleargrads()
         out.backward()
 
+        self._x = x
+        self._model = model
+        self._out = out
+        self._use_ideep = 'auto' if ideep else 'never'
+        print('setup')
 
-@xp(numpy=False)
+    def time_forward(self, arch, batchsize, mode):
+        with chainer.using_config('use_ideep', self._use_ideep):
+            self._model.forward(self._x)
+        print('forward')
+
+    def time_backward(self, arch, batchsize, mode):
+        with chainer.using_config('use_ideep', self._use_ideep):
+            self._out.backward()
+        print('backward')
+
+
 @parameterize([
     ('arch', ['vgga']),
     ('batchsize', [64]),
-    ('use_ideep', [False]),
+    ('mode', ['cpu']),
 ])
 class ConvnetVGGA(_ConvnetBase):
     pass
 
 
-@xp(numpy=False)
 @parameterize([
     ('arch', ['alexnet', 'googlenet', 'overfeat']),
     ('batchsize', [128]),
-    ('use_ideep', [False]),
+    ('mode', ['gpu', 'cpu', 'cpu-ideep']),
 ])
 class ConvnetOthers(_ConvnetBase):
-    pass
-
-
-@xp(cupy=False)
-@parameterize([
-    ('arch', ['alexnet', 'googlenet', 'overfeat']),
-    ('batchsize', [8]),
-    ('use_ideep', [True, False]),
-])
-class ConvnetOthersNumPy(_ConvnetBase):
     pass
