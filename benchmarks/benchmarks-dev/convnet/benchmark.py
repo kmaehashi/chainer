@@ -5,7 +5,6 @@ from chainer import optimizers
 import cupy
 import numpy
 
-import ideep4py
 from ..utils import parameterize, have_ideep
 
 

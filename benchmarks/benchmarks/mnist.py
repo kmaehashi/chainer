@@ -6,7 +6,7 @@ import chainer.links as L
 from chainer import training
 from chainer.training import extensions
 
-from .utils import parameterize, have_ideep
+from .utils import parameterize, backends, is_backend_gpu, is_backend_ideep
 
 
 class MLP(chainer.Chain):
@@ -26,15 +26,17 @@ class MLP(chainer.Chain):
 
 class MLPApplication(object):
 
-    def main(self, units=1000, epoch=20, batchsize=100, gpu=-1, ideep=False):
+    def main(self, units=1000, epoch=20, batchsize=100):
+        chainer.config.show()
+
         model = L.Classifier(MLP(units, 10))
 
-        if 0 <= gpu:
-            assert not ideep
+        gpu = -1
+        if is_backend_gpu():
+            gpu = 0
             chainer.cuda.get_device_from_id(gpu).use()
             model.to_gpu()
-        elif ideep:
-            assert have_ideep()
+        elif is_backend_ideep():
             model.to_intel64()
 
         optimizer = chainer.optimizers.MomentumSGD().setup(model)
@@ -50,21 +52,15 @@ class MLPApplication(object):
         trainer = training.Trainer(updater, (epoch, 'epoch'))
         trainer.extend(extensions.Evaluator(test_iter, model, device=gpu))
 
-        with chainer.using_config('use_ideep', 'auto' if ideep else 'never'):
-            trainer.run()
+        trainer.run()
 
 
-_modes = ['gpu', 'cpu'] + (['cpu-ideep'] if have_ideep() else [])
-
+@backends('gpu', 'gpu-cudnn', 'cpu', 'cpu-ideep')
 @parameterize([
-    ('mode', _modes),
     ('units', [10, 100, 200, 300, 500]),
 ])
 class TimeMLP(object):
     timeout = 360
 
-    def time_overall(self, mode, units):
-        app = MLPApplication()
-        gpu = 0 if mode == 'gpu' else -1
-        ideep = True if mode == 'cpu-ideep' else False
-        app.main(units=units, epoch=1, gpu=gpu, ideep=ideep)
+    def time_overall(self, xp, units):
+        MLPApplication().main(units=units, epoch=1)
