@@ -4,6 +4,10 @@ import inspect
 import cupy
 
 
+def _is_func(target):
+    return inspect.ismethod(target) or inspect.isfunction(target)
+
+
 def synchronize(target):
     """Decorator to perform CPU/GPU synchronization.
 
@@ -12,28 +16,26 @@ def synchronize(target):
 
     if isinstance(target, type):
         klass = target
-        members = inspect.getmembers(
-            klass,
-            predicate=lambda _: (
-                inspect.ismethod(_) or inspect.isfunction(_)))
+        members = inspect.getmembers(klass, predicate=_is_func)
         for (name, func) in members:
             if not (name == 'setup' or name.startswith('time_')):
                 continue
             setattr(klass, name, _synchronize_func(func))
         return klass
-    else:
+    elif _is_func(target):
         return _synchronize_func(target)
+    else:
+        raise TypeError('cannot apply decorator to this entity')
 
 
 def _synchronize_func(func):
-    assert inspect.ismethod(func) or inspect.isfunction(func)
-
     @wraps(func)
     def _wrapped_func(*args, **kwargs):
         event = cupy.cuda.stream.Event()
         func(*args, **kwargs)
-        print('Synchronizing...')
+        print('Synchronization start...')
         event.synchronize()
+        print('Synchronization done.')
     return _wrapped_func
 
 

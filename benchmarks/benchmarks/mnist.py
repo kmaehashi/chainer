@@ -24,9 +24,9 @@ class MLP(chainer.Chain):
         return self.l3(h2)
 
 
-class MLPApplication(object):
+class Application(object):
 
-    def main(self, units=1000, epoch=20, batchsize=100):
+    def main(self, units, epoch, batchsize):
         chainer.config.show()
 
         model = L.Classifier(MLP(units, 10))
@@ -63,4 +63,4 @@ class TimeMLP(object):
     timeout = 360
 
     def time_overall(self, xp, units):
-        MLPApplication().main(units=units, epoch=1)
+        Application().main(units=units, epoch=1, batchsize=100)
