@@ -63,7 +63,6 @@
     // },
     "matrix": {
         //"/home/kenichi/Development/cupy-release-tools/built/cupy_cuda90-4.0.0b2-cp36-cp36m-linux_x86_64.whl": [],
-        //"Cython": [],
         "cython": [],
         "cupy": [],
         "ideep4py": [],
