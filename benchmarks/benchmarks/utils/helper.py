@@ -25,7 +25,7 @@ def synchronize(target):
     elif _is_func(target):
         return _synchronize_func(target)
     else:
-        raise TypeError('cannot apply decorator to this entity')
+        raise TypeError('cannot apply decorator to {}'.format(target))
 
 
 def _synchronize_func(func):

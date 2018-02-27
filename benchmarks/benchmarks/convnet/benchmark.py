@@ -5,17 +5,17 @@ from chainer import optimizers
 import cupy
 import numpy
 
-from ..utils import parameterize, have_ideep
+from ..utils import backends
+from ..utils import is_backend_gpu
+from ..utils import is_backend_ideep
+from ..utils import parameterize
 
 
 class _ConvnetBase(object):
     timeout = 600
     number = 1
 
-    def setup(self, arch, batchsize, mode):
-        xp = cupy if mode == 'gpu' else numpy
-        ideep = True if mode == 'cpu-ideep' else False
-
+    def setup(self, xp, arch, batchsize):
         if arch == 'alexnet':
             from .nets import alex
             model = alex.Alex()
@@ -31,21 +31,20 @@ class _ConvnetBase(object):
         else:
             raise ValueError('Invalid architecture name')
 
-        if xp is cupy:
+        if is_backend_gpu():
             model.to_gpu()
-        elif ideep:
-            assert have_ideep()
+        elif is_backend_ideep():
             model.to_intel64()
 
         # Setup optimizer
         optimizer = optimizers.SGD(lr=0.01)
         optimizer.setup(model)
 
+        # Set cuDNN workspace size
         workspace_size = int(1 * 2**30)
         chainer.cuda.set_max_workspace_size(workspace_size)
 
         chainer.config.train = True
-        chainer.config.use_cudnn = 'always'
 
         # Trainer
         data = xp.ndarray((batchsize, 3, model.insize,
@@ -63,37 +62,31 @@ class _ConvnetBase(object):
         out.zerograd()
         out.grad.fill(3)
         model.cleargrads()
-        out.backward()
 
         self._x = x
         self._model = model
         self._out = out
-        self._use_ideep = 'auto' if ideep else 'never'
 
-    def time_forward(self, arch, batchsize, mode):
-        with chainer.using_config('use_ideep', self._use_ideep):
-            self._model.forward(self._x)
+    def time_forward(self, xp, arch, batchsize):
+        self._model.forward(self._x)
 
-    def time_backward(self, arch, batchsize, mode):
-        with chainer.using_config('use_ideep', self._use_ideep):
-            self._out.backward()
+    def time_backward(self, xp, arch, batchsize):
+        self._out.backward()
 
 
-_modes = ['gpu', 'cpu'] + (['cpu-ideep'] if have_ideep() else [])
-
+@backends('gpu', 'gpu-cudnn', 'cpu', 'cpu-ideep')
 @parameterize([
     ('arch', ['vgga']),
     ('batchsize', [64]),
-    ('mode', _modes),
 ])
 class ConvnetVGGA(_ConvnetBase):
     pass
 
 
+@backends('gpu', 'gpu-cudnn', 'cpu', 'cpu-ideep')
 @parameterize([
     ('arch', ['alexnet', 'googlenet', 'overfeat']),
     ('batchsize', [128]),
-    ('mode', _modes),
 ])
 class ConvnetOthers(_ConvnetBase):
     pass

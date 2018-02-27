@@ -22,24 +22,31 @@ def backends(*modes):
     """Class decorator to parameterize the benchmark class with backends.
 
     This is a special form of :func:`parameterize` to parameterize the
-    backend configuration. For all `time_*` functions and `setup` function
+    backend variation. For all `time_*` functions and `setup` function
     in the class, this decorator:
 
     * wraps the function to be called with the Chainer configuration
-      that corresponds to the current backend configuration.
+      (`use_cudnn` and `use_ideep`) set to the current backend variation.
     * wraps the function to perform CPU/GPU synchronization after the
-      benchmark, when the current backend configuration uses GPU. The time
+      benchmark, when the current backend variation uses GPU. The time
       taken for synchronization is counted as a elapsed time in the benchmark.
-    * injects `xp` (`cupy` or `numpy` depending on the current configuration)
+    * injects `xp` (`cupy` or `numpy` depending on the current variation)
       as the first argument of the function so that benchmark code can use it
       to work with array modules with each backend.
-    * provides access to `is_backend_*()` methods so that benchmark code can
-      use it to change behavior depending on the backend configuration (e.g.,
-      `if is_backend_gpu(): model.to_gpu()`).
+    * provides access to `is_backend_gpu()` and `is_backend_ideep()` methods
+      so that benchmark code can use it to change behavior depending on the
+      backend variation (e.g., `if is_backend_gpu(): model.to_gpu()`).
 
     Note that `cpu-ideep` mode will automatically be removed if the current
     benchmark setup does not support it, e.g., when running benchmark
     against older Chainer version that does not support iDeep.
+
+    This decorator adds parameter axis with the name of `backend`.
+
+    >>> @backend('gpu', 'gpu-cudnn', 'cpu', 'cpu-ideep')
+    ... class ConvolutionBenchmark(object):
+    ...     def time_benchmark(self):
+    ...         ...
     """
 
     assert all([m in _backend_modes for m in modes])
@@ -55,7 +62,7 @@ def backends(*modes):
 
 
 def _inject_backend_mode(klass, modes):
-    klass = parameterize([('mode', modes)], _head=True)(klass)
+    klass = parameterize([('backend', modes)], _head=True)(klass)
     members = inspect.getmembers(klass, predicate=_is_func)
 
     for (name, func) in members:
@@ -64,7 +71,7 @@ def _inject_backend_mode(klass, modes):
 
         def _wrap_func(f):
             @wraps(f)
-            def _wrapped_func(self, mode, *args, **kwargs):
+            def _wrapped_func(self, backend, *args, **kwargs):
                 _benchmark_backend_gpu = False
                 _benchmark_backend_ideep = False
                 xp = numpy
@@ -72,13 +79,13 @@ def _inject_backend_mode(klass, modes):
                 use_ideep = 'never'
 
                 target = f
-                if mode.startswith('gpu'):
+                if backend.startswith('gpu'):
                     xp = cupy
                     _benchmark_backend_gpu = True
                     target = synchronize(target)
-                    if 'cudnn' in mode:
+                    if 'cudnn' in backend:
                         use_cudnn = 'auto'
-                elif 'ideep' in mode:
+                elif 'ideep' in backend:
                     use_ideep = 'auto'
                     _benchmark_backend_ideep = True
 
@@ -88,6 +95,9 @@ def _inject_backend_mode(klass, modes):
                         '_benchmark_backend_gpu': _benchmark_backend_gpu,
                         '_benchmark_backend_ideep': _benchmark_backend_ideep,
                         }):
+                    if chainer.config.debug:
+                        print('=== Backend Mode: {} ==='.format(backend))
+                        print(chainer.config.show())
                     target(self, xp, *args, **kwargs)
 
             return _wrapped_func

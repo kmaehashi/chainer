@@ -6,7 +6,10 @@ import chainer.links as L
 from chainer import training
 from chainer.training import extensions
 
-from .utils import parameterize, backends, is_backend_gpu, is_backend_ideep
+from ..utils import backends
+from ..utils import is_backend_gpu
+from ..utils import is_backend_ideep
+from ..utils import parameterize
 
 
 class MLP(chainer.Chain):
