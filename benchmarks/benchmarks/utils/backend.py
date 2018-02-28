@@ -50,6 +50,8 @@ def backends(*modes):
 
     This decorator adds parameter axis with the name of `backend`.
 
+    Example of usage is as follows:
+
     >>> @backend('gpu', 'gpu-cudnn', 'cpu', 'cpu-ideep')
     ... class ConvolutionBenchmark(object):
     ...     def time_benchmark(self):

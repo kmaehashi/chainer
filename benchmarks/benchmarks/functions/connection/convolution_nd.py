@@ -1,21 +1,27 @@
 import functools
+from operator import mul
 
-import chainer
 import numpy
 
-from ...utils import parameterize, backends, config
+import chainer
+import chainer.functions as F
+from chainer.utils import conv
+
+from ...utils import backends, config
 
 
 class _ConvolutionNDBase(object):
-    def setup(self, xp):
-        # From test parameters:
-        self.dims = (3, 4, 3)
+    def setup(self):
+        xp = self.xp
+
+        # Test parameters
+        self.dims = (256, 256, 256)
         self.cover_all = True
         self.c_contiguous = True
         self.x_dtype = xp.float32
         self.W_dtype = xp.float32
 
-        # From setup:
+        # Prepare test data
         in_channels = 3
         out_channels = 2
         ndim = len(self.dims)
@@ -42,12 +48,12 @@ class _ConvolutionNDBase(object):
         self.ggb = numpy.random.uniform(-1, 1, self.b.shape).astype(
             self.x_dtype)
 
-        # From check_forward_consistency:
+        # Transfer test data to device.
         self.x = chainer.Variable(xp.asarray(self.x))
         self.W = chainer.Variable(xp.asarray(self.W))
         self.b = chainer.Variable(xp.asarray(self.b))
 
-    def time_forward(self, xp):
+    def time_forward(self):
         F.convolution_nd(
             self.x, self.W, self.b, stride=self.stride,
             pad=self.pad, cover_all=self.cover_all)

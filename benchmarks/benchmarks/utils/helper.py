@@ -54,13 +54,23 @@ def parameterize(args):
 
     You cannot use `parameterize` decorator to the class already decorated
     by other specialized parameterizing decorators such as `backends` and
-    `config`.  If you want to mix them, make `parameterize` the most inner
-    decorator (i.e., closest to the class declaration).
+    `config`.  If you want to use these decorators along with this decorator,
+    make `parameterize` the most inner (i.e., the closest to the class
+    declaration) decorator.
 
-    Note that due to the limitation of ASV, parameters cannot be sparse.
+    Parameters cannot be sparse due to the limitation of ASV.
     """
 
     def _wrap_class(klass):
+        """Wrap the class.
+
+        Internally, this function utilizes the parameterization feature of
+        ASV, i.e., set `params` and `param_names` attribute to the class.
+        `params` is a list of list of parameters, and `param_names` is a list
+        of parameter names. `params[n]` is a list of parameters for parameter
+        called `param_names[n]` where `n` is an index.
+        """
+
         assert isinstance(klass, type)
 
         params = [arg[1] for arg in args]
@@ -70,6 +80,8 @@ def parameterize(args):
         orig_param_names = getattr(klass, 'param_names', [])
 
         if 0 < len(orig_params):
+            # ASV allows specifying list of parameters (instead of list of
+            # list of parameters) if only one parameter axis is given.
             if not isinstance(orig_params[0], (tuple, list)):
                 orig_params = [orig_params]
                 if len(orig_param_names) == 0:
