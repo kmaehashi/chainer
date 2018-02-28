@@ -1,10 +1,9 @@
-import chainer
-from chainer import cuda
-from chainer import optimizers
-
 import functools
 
-from .utils import parameterize, backends
+import chainer
+import numpy
+
+from ...utils import parameterize, backends, config
 
 
 class _ConvolutionNDBase(object):
@@ -16,7 +15,7 @@ class _ConvolutionNDBase(object):
         self.x_dtype = xp.float32
         self.W_dtype = xp.float32
 
-        # From test setup:
+        # From setup:
         in_channels = 3
         out_channels = 2
         ndim = len(self.dims)
@@ -43,11 +42,15 @@ class _ConvolutionNDBase(object):
         self.ggb = numpy.random.uniform(-1, 1, self.b.shape).astype(
             self.x_dtype)
 
-    def time_convolution_nd(self, xp):
+        # From check_forward_consistency:
+        self.x = chainer.Variable(xp.asarray(self.x))
+        self.W = chainer.Variable(xp.asarray(self.W))
+        self.b = chainer.Variable(xp.asarray(self.b))
+
+    def time_forward(self, xp):
         F.convolution_nd(
-            self.x, W_gpu, b_gpu, stride=self.stride,
-            pad=self.pad,
-            cover_all=self.cover_all)
+            self.x, self.W, self.b, stride=self.stride,
+            pad=self.pad, cover_all=self.cover_all)
 
 
 @backends('gpu', 'cpu', 'cpu-ideep')

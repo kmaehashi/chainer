@@ -33,9 +33,7 @@ def _synchronize_func(func):
     def _wrapped_func(*args, **kwargs):
         event = cupy.cuda.stream.Event()
         func(*args, **kwargs)
-        print('Synchronization start...')
         event.synchronize()
-        print('Synchronization done.')
     return _wrapped_func
 
 
