@@ -10,10 +10,17 @@ from .helper import parameterize
 from .helper import synchronize
 
 
-_backend_modes = [
+ALL_BACKENDS = [
+    # GPU (with use_cudnn == 'never')
     'gpu',
+
+    # GPU (with use_cudnn == 'auto')
     'gpu-cudnn',
+
+    # CPU (with use_ideep == 'never')
     'cpu',
+
+    # CPU (with use_ideep == 'auto')
     'cpu-ideep',
 ]
 
@@ -30,9 +37,9 @@ def backends(*modes):
     * wraps the function to perform CPU/GPU synchronization after the
       benchmark, when the current backend variation uses GPU. The time
       taken for synchronization is counted as a elapsed time in the benchmark.
-    * injects `xp` (`cupy` or `numpy` depending on the current variation)
-      as the first argument of the function so that benchmark code can use it
-      to work with array modules with each backend.
+    * injects the array module (`cupy` or `numpy` depending on the current
+      variation) as `self.xp` so that benchmark code can use it to work with
+      array modules with each backend.
     * provides access to `is_backend_gpu()` and `is_backend_ideep()` methods
       so that benchmark code can use it to change behavior depending on the
       backend variation (e.g., `if is_backend_gpu(): model.to_gpu()`).
@@ -49,9 +56,9 @@ def backends(*modes):
     ...         ...
     """
 
-    assert all([m in _backend_modes for m in modes])
+    assert all([m in ALL_BACKENDS for m in modes])
 
-    if not have_ideep() and 'cpu-ideep' in modes:
+    if not _have_ideep() and 'cpu-ideep' in modes:
         modes.remove('cpu-ideep')
 
     def _wrap_class(klass):
@@ -62,7 +69,7 @@ def backends(*modes):
 
 
 def _inject_backend_mode(klass, modes):
-    klass = parameterize([('backend', modes)], _head=True)(klass)
+    klass = parameterize([('backend', modes)])(klass)
     members = inspect.getmembers(klass, predicate=_is_func)
 
     for (name, func) in members:
@@ -98,7 +105,10 @@ def _inject_backend_mode(klass, modes):
                     if chainer.config.debug:
                         print('=== Backend Mode: {} ==='.format(backend))
                         print(chainer.config.show())
-                    target(self, xp, *args, **kwargs)
+                    assert not hasattr(self, 'xp')
+                    setattr(self, 'xp', xp)
+                    target(self, *args, **kwargs)
+                    delattr(self, 'xp')
 
             return _wrapped_func
         setattr(klass, name, _wrap_func(func))
@@ -138,7 +148,7 @@ def is_backend_ideep():
     return chainer.config._benchmark_backend_ideep
 
 
-def have_ideep():
+def _have_ideep():
     """Tests if iDeep can be used in the current benchmark configuration.
 
     If you intend to write benchmark for iDeep outside of `backend` decorator,

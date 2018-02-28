@@ -20,37 +20,44 @@ def synchronize(target):
         for (name, func) in members:
             if not (name == 'setup' or name.startswith('time_')):
                 continue
-            setattr(klass, name, _synchronize_func(func))
+            setattr(klass, name, _synchronized_func(func))
         return klass
     elif _is_func(target):
-        return _synchronize_func(target)
+        return _synchronized_func(target)
     else:
         raise TypeError('cannot apply decorator to {}'.format(target))
 
 
-def _synchronize_func(func):
+def _synchronized_func(func):
     @wraps(func)
-    def _wrapped_func(*args, **kwargs):
+    def _wrap_func(*args, **kwargs):
         event = cupy.cuda.stream.Event()
         func(*args, **kwargs)
         event.synchronize()
-    return _wrapped_func
+    return _wrap_func
 
 
-def parameterize(args, _head=False):
-    """Class decorator to parameterize the ASV benchmark class.
+def parameterize(args):
+    """Class decorator to parameterize the benchmark.
 
-    Due to the limitation of ASV, parameters cannot be sparse.
+    Pass the list of pair of parameter name and values. Each parameter
+    value will be passed as the function argument when benchmark runs.
     See the example below for the usage.
 
-    >>> @parameterize(
+    >>> @parameterize([
     ...     ('batchsize', [32, 64, 128]),
     ...     ('n_gpus', [1, 2]),
-    ... )
+    ... ])
     ... class MyBenchmark(object):
     ...     def time_all(self, batchsize, n_gpus):
     ...         ...
 
+    You cannot use `parameterize` decorator to the class already decorated
+    by other specialized parameterizing decorators such as `backends` and
+    `config`.  If you want to mix them, make `parameterize` the most inner
+    decorator (i.e., closest to the class declaration).
+
+    Note that due to the limitation of ASV, parameters cannot be sparse.
     """
 
     def _wrap_class(klass):
@@ -71,12 +78,8 @@ def parameterize(args, _head=False):
         else:
             assert len(orig_param_names) == 0
 
-        if _head:
-            params += orig_params
-            param_names += orig_param_names
-        else:
-            params = orig_params + params
-            param_names = orig_param_names + param_names
+        params += orig_params
+        param_names += orig_param_names
 
         assert len(params) == len(param_names)
 
