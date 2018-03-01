@@ -60,7 +60,7 @@ def backends(*modes):
 
     assert all([m in ALL_BACKENDS for m in modes])
 
-    if not _have_ideep() and 'cpu-ideep' in modes:
+    if not have_ideep() and 'cpu-ideep' in modes:
         modes.remove('cpu-ideep')
 
     def _wrap_class(klass):
@@ -107,6 +107,8 @@ def _inject_backend_mode(klass, modes):
                     if chainer.config.debug:
                         print('=== Backend Mode: {} ==='.format(backend))
                         print(chainer.config.show())
+
+                    # Inject self.xp
                     assert not hasattr(self, 'xp')
                     setattr(self, 'xp', xp)
                     target(self, *args, **kwargs)
@@ -119,7 +121,7 @@ def _inject_backend_mode(klass, modes):
 
 
 class _BackendConfig(object):
-    """Combines multiple Chainer configurations as one context manager."""
+    """Context manager that changes multiple Chainer configurations."""
 
     def __init__(self, params):
         self._params = params
@@ -150,7 +152,7 @@ def is_backend_ideep():
     return chainer.config._benchmark_backend_ideep
 
 
-def _have_ideep():
+def have_ideep():
     """Tests if iDeep can be used in the current benchmark configuration.
 
     If you intend to write benchmark for iDeep outside of `backend` decorator,
