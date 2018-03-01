@@ -48,7 +48,7 @@ class _ConvolutionNDBase(object):
         self.ggb = numpy.random.uniform(-1, 1, self.b.shape).astype(
             self.x_dtype)
 
-        # Transfer test data to device.
+        # Transfer data to device.
         self.x = chainer.Variable(xp.asarray(self.x))
         self.W = chainer.Variable(xp.asarray(self.W))
         self.b = chainer.Variable(xp.asarray(self.b))

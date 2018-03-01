@@ -1,4 +1,6 @@
-from .utils import *
+from utils import *
+
+from . import Benchmark
 
 @backends('gpu-cudnn')
 @config('baz', ['baz-x','baz-y'])

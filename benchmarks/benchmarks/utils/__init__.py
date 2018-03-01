@@ -1,9 +1,9 @@
-from .backend import backends  # NOQA
-from .backend import is_backend_gpu  # NOQA
-from .backend import is_backend_ideep  # NOQA
-from .backend import have_ideep  # NOQA
+from utils.backend import backends  # NOQA
+from utils.backend import is_backend_gpu  # NOQA
+from utils.backend import is_backend_ideep  # NOQA
+from utils.backend import have_ideep  # NOQA
 
-from .config import config  # NOQA
+from utils.config import config  # NOQA
 
-from .helper import parameterize  # NOQA
-from .helper import synchronize  # NOQA
+from utils.helper import parameterize  # NOQA
+from utils.helper import sync  # NOQA

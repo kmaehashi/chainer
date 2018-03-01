@@ -15,7 +15,9 @@ class _ConvnetBase(object):
     timeout = 600
     number = 1
 
-    def setup(self, xp, arch, batchsize):
+    def setup(self, arch, batchsize):
+        xp = self.xp
+
         if arch == 'alexnet':
             from .nets import alex
             model = alex.Alex()
@@ -46,12 +48,9 @@ class _ConvnetBase(object):
 
         chainer.config.train = True
 
-        # Trainer
-        data = xp.ndarray((batchsize, 3, model.insize,
+        x = xp.ndarray((batchsize, 3, model.insize,
                            model.insize), dtype=xp.float32)
-        data.fill(33333)
-
-        x = xp.asarray(data)
+        x.fill(33333)
 
         if arch == 'googlenet':
             out1, out2, out3 = model.forward(x)
@@ -67,10 +66,10 @@ class _ConvnetBase(object):
         self._model = model
         self._out = out
 
-    def time_forward(self, xp, arch, batchsize):
+    def time_forward(self, arch, batchsize):
         self._model.forward(self._x)
 
-    def time_backward(self, xp, arch, batchsize):
+    def time_backward(self, arch, batchsize):
         self._out.backward()
 
 
@@ -79,7 +78,7 @@ class _ConvnetBase(object):
     ('arch', ['vgga']),
     ('batchsize', [64]),
 ])
-class ConvnetVGGA(_ConvnetBase):
+class ConvnetVGGA(_ConvnetBase, Benchmark):
     pass
 
 
@@ -88,5 +87,5 @@ class ConvnetVGGA(_ConvnetBase):
     ('arch', ['alexnet', 'googlenet', 'overfeat']),
     ('batchsize', [128]),
 ])
-class ConvnetOthers(_ConvnetBase):
+class ConvnetOthers(_ConvnetBase, Benchmark):
     pass

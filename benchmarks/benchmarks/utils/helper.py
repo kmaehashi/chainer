@@ -8,7 +8,7 @@ def _is_func(target):
     return inspect.ismethod(target) or inspect.isfunction(target)
 
 
-def synchronize(target):
+def sync(target):
     """Decorator to perform CPU/GPU synchronization.
 
     This decorator can be applied to both classes and functions.
@@ -51,12 +51,6 @@ def parameterize(args):
     ... class MyBenchmark(object):
     ...     def time_all(self, batchsize, n_gpus):
     ...         ...
-
-    You cannot use `parameterize` decorator to the class already decorated
-    by other specialized parameterizing decorators such as `backends` and
-    `config`.  If you want to use these decorators along with this decorator,
-    make `parameterize` the most inner (i.e., the closest to the class
-    declaration) decorator.
 
     Parameters cannot be sparse due to the limitation of ASV.
     """

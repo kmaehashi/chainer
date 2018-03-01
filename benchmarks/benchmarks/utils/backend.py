@@ -1,16 +1,18 @@
 from functools import wraps
 import inspect
+import os
+import warnings
 
 import chainer
 import cupy
 import numpy
 
-from .helper import _is_func
-from .helper import parameterize
-from .helper import synchronize
+from utils.helper import _is_func
+from utils.helper import parameterize
+from utils.helper import sync
 
 
-ALL_BACKENDS = [
+_backend_modes = [
     # GPU (with use_cudnn == 'never')
     'gpu',
 
@@ -44,11 +46,16 @@ def backends(*modes):
       so that benchmark code can use it to change behavior depending on the
       backend variation (e.g., `if is_backend_gpu(): model.to_gpu()`).
 
+    This decorator adds parameter axis with the name of `backend`.
+
     Note that `cpu-ideep` mode will automatically be removed if the current
     benchmark setup does not support it, e.g., when running benchmark
     against older Chainer version that does not support iDeep.
 
-    This decorator adds parameter axis with the name of `backend`.
+    You cannot apply `parameterize` decorator to the class already decorated
+    by this decorator.  If you want to use `parameterize` along with this
+    decorator, make `parameterize` the most inner (i.e., the closest to the
+    class declaration) decorator.
 
     Example of usage is as follows:
 
@@ -58,9 +65,10 @@ def backends(*modes):
     ...         ...
     """
 
-    assert all([m in ALL_BACKENDS for m in modes])
+    assert all([m in _backend_modes for m in modes])
 
     if not have_ideep() and 'cpu-ideep' in modes:
+        warnings.warn('iDeep is unavailable; removing from backend axis')
         modes.remove('cpu-ideep')
 
     def _wrap_class(klass):
@@ -91,7 +99,7 @@ def _inject_backend_mode(klass, modes):
                 if backend.startswith('gpu'):
                     xp = cupy
                     _benchmark_backend_gpu = True
-                    target = synchronize(target)
+                    target = sync(target)
                     if 'cudnn' in backend:
                         use_cudnn = 'auto'
                 elif 'ideep' in backend:

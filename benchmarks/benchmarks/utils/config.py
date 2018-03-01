@@ -3,8 +3,8 @@ import inspect
 
 import chainer
 
-from .helper import _is_func
-from .helper import parameterize
+from utils.helper import _is_func
+from utils.helper import parameterize
 
 
 def config(key, values, axis=None):
@@ -15,11 +15,16 @@ def config(key, values, axis=None):
     in the class, this decorator wraps the function to be called inside the
     context where specified Chainer configuration set.
 
-    Note that the configuration will not be parameterized if Chainer used in
-    the benchmark does not support it.
-
     This decorator adds parameter axis with the name of the configuration
     by default. You can change the axis name by passing axis parameter.
+
+    Note that the configuration will automatically be removed if Chainer used
+    in the current benchmark setup does not support it.
+
+    You cannot apply `parameterize` decorator to the class already decorated
+    by this decorator.  If you want to use `parameterize` along with this
+    decorator, make `parameterize` the most inner (i.e., the closest to the
+    class declaration) decorator.
 
     Example of usage is as follows:
 
