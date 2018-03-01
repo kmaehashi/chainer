@@ -60,7 +60,7 @@ class Application(object):
 
 @backends('gpu', 'gpu-cudnn', 'cpu', 'cpu-ideep')
 @parameterize([
-    ('units', [10, 100, 200, 300, 500]),
+    ('units', [10, 100, 150, 200, 500]),
 ])
 class TimeMLP(object):
     timeout = 360
