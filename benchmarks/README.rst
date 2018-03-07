@@ -3,7 +3,7 @@ Chainer Benchmarks
 
 Benchmarking Chainer with Airspeed Velocity.
 
-.. code-block:: py
+.. code-block:: sh
 
     # Install Airspeed Velocity.
     pip install asv
