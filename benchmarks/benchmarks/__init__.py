@@ -1,5 +1,11 @@
 import inspect
 
+import chainer
+
+
+# Ensure cuDNN enabled to run benchmark.
+assert chainer.cuda.cudnn_enabled
+
 
 class BenchmarkBase(object):
     """Base class for all benchmarks.
