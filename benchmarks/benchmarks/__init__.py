@@ -16,6 +16,11 @@ class BenchmarkBase(object):
             self.__class__,
             predicate=lambda x: inspect.ismethod(x) or inspect.isfunction(x))
         for (name, func) in members:
+            if hasattr(func, '__func__'):
+                # For Python 2
+                func = func.__func__
+            if name.startswith('time_'):
+                name = name[5:]
             func.pretty_name = '{}.{}'.format(type(self).__name__, name)
 
     def setup(self, *args, **kwargs):
