@@ -14,7 +14,7 @@ v3.1.0
 v3.0.0
 "
 
-for T in ${TAGS}; do
-    CUPY_TAG=$(./get_cupy_version.py ${T})
-    ./run.sh ${T} ${CUPY_TAG} -vvv
+for CHAINER_TAG in ${TAGS}; do
+  CUPY_TAG=$(./get_cupy_version.py ${CHAINER_TAG})
+  ./run.sh ${CHAINER_TAG} ${CUPY_TAG} -vvv
 done

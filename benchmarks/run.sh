@@ -1,22 +1,23 @@
 #!/bin/bash -uex
 
-CHAINER_COMMIT="${1}"; shift
-CUPY_COMMIT="${1}"; shift
+function run_benchmark() {
+  CHAINER_COMMIT="${1}"; shift
+  CUPY_COMMIT="${1}"; shift
 
-# Clone CuPy.
-if [ ! -d cupy ]; then
-  git clone https://github.com/cupy/cupy.git
-fi
+  # Clone CuPy.
+  if [ ! -d cupy ]; then
+    git clone https://github.com/cupy/cupy.git
+  fi
 
-# Checkout the branch to use.
-# Also run build to boost up installation.
-pushd cupy
-git checkout "${CUPY_COMMIT}"
-popd
+  # Checkout the branch to use.
+  pushd cupy
+  git checkout "${CUPY_COMMIT}"
+  popd
 
-# Remove the old benchmark environment.
-# This is needed to reinstall cloned CuPy branch to the environment.
-rm -rf env
+  # Run the benchmark.
+  # The benchmark environment depends on ${CUPY_COMMIT}.
+  export VOLATILE_VIRTUALENV_KEY="${CUPY_COMMIT}"
+  asv run --step 1 "$@" "${CHAINER_COMMIT}"
+}
 
-# Run the benchmark.
-asv run --step 1 "$@" "${CHAINER_COMMIT}"
+run_benchmark "$@"

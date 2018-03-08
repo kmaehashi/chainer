@@ -5,7 +5,7 @@ import sys
 
 
 # Take care of special cases.
-CHAINER_CUPY_VERSION_MAPPING = {
+CHAINER_CUPY_VERSION_MAP = {
     # Always use CuPy master branch for Chainer master branch.
     'master': 'master',
 
@@ -18,11 +18,11 @@ CHAINER_CUPY_VERSION_MAPPING = {
 
 
 def get_cupy_version_for(chainer):
-    """Show CuPy version required for the given Chainer version."""
+    """Returns CuPy version required for the given Chainer version."""
 
     # Handle special cases.
-    if chainer in CHAINER_CUPY_VERSION_MAPPING:
-        return CHAINER_CUPY_VERSION_MAPPING[chainer]
+    if chainer in CHAINER_CUPY_VERSION_MAP:
+        return CHAINER_CUPY_VERSION_MAP[chainer]
 
     # Use standard rules for the rest.
     m = re.search('^v(\d)\.(.+)$', chainer)
