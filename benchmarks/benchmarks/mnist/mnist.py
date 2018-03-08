@@ -39,7 +39,8 @@ class Application(object):
         elif is_backend_ideep():
             model.to_intel64()
 
-        optimizer = chainer.optimizers.MomentumSGD().setup(model)
+        optimizer = chainer.optimizers.MomentumSGD()
+        optimizer.setup(model)
 
         train, test = chainer.datasets.get_mnist()
         train_iter = chainer.iterators.SerialIterator(
