@@ -3,7 +3,8 @@ import inspect
 import chainer
 
 
-# Ensure cuDNN enabled to run benchmark.
+# Ensure that CuPy and cuDNN are available.
+assert chainer.cuda.available
 assert chainer.cuda.cudnn_enabled
 
 
