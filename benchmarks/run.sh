@@ -17,7 +17,8 @@ function run_asv() {
   # version used in the benchmark virtualenv.
   pushd cupy
   git remote update
-  git checkout "${CUPY_COMMIT}"
+  git clean -fdx
+  git checkout "$(git show --format="%H" ${CUPY_COMMIT})"
   python setup.py build_ext --inplace
   export PYTHONPATH="${PWD}:${PYTHONPATH:-}"
   popd
