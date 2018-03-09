@@ -29,7 +29,7 @@
     // If missing or the empty string, the tool will be automatically
     // determined by looking for tools on the PATH environment
     // variable.
-    "environment_type": "volatile-virtualenv",
+    "environment_type": "virtualenv",
 
     // timeout in seconds for installing any dependencies in environment
     // defaults to 10 min
@@ -62,19 +62,6 @@
     //     "pip+emcee": [""],   // emcee is only available for install with pip.
     // },
     "matrix": {
-        // CuPy requirements.
-        "cython": [],
-        "numpy": [],
-        "six": [],
-        "fastrlock": [],
-
-        // Chainer requirements.
-        "filelock": [],
-        "protobuf": [],
-        "ideep4py": [],
-
-        // Use CuPy source tree in the current directory.
-        "./cupy": [],
     },
 
     // Combinations of libraries/python versions can be excluded/included
@@ -157,8 +144,4 @@
     //    "some_benchmark": 0.01,     // Threshold of 1%
     //    "another_benchmark": 0.5,   // Threshold of 50%
     // }
-
-    "plugins": [
-        ".plugins.volatile_virtualenv",
-    ],
 }
