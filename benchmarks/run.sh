@@ -13,6 +13,8 @@ function run_asv() {
   # Note that CuPy will be injected from current environment via `PYTHONPATH`
   # instead of `matrix` in `asv.conf.json`, because Chainer and CuPy are
   # tightly-coupled that we should manually pick which commit of CuPy to use.
+  # The version of the python command in outer world must match with the
+  # version used in the benchmark virtualenv.
   pushd cupy
   git remote update
   git checkout "${CUPY_COMMIT}"
