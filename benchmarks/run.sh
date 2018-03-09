@@ -1,36 +1,30 @@
 #!/bin/bash -uex
 
-function git_commit() {
-  git show --format="%H" "$@"
-}
-
-function run_benchmark() {
+function run_asv() {
   CHAINER_COMMIT="${1}"; shift
   CUPY_COMMIT="${1}"; shift
-
-  # Ensure to use commit hash in case CHAINER_COMMIT is a branch.
-  CHAINER_COMMIT="$(git_commit ${CHAINER_COMMIT})"
 
   # Clone CuPy.
   if [ ! -d cupy ]; then
     git clone https://github.com/cupy/cupy.git
   fi
 
-  # Checkout the branch to use.
+  # Build CuPy commit to use for benchmark.
+  # Note that CuPy will be injected from current environment via `PYTHONPATH`
+  # instead of `matrix` in `asv.conf.json`, because Chainer and CuPy are
+  # tightly-coupled that we should manually pick which commit of CuPy to use.
   pushd cupy
+  git remote update
   git checkout "${CUPY_COMMIT}"
-
-  # Ensure to use commit hash in case CUPY_COMMIT is a branch.
-  CUPY_COMMIT="$(git_commit ${CUPY_COMMIT})"
+  python setup.py build_ext --inplace
+  export PYTHONPATH="${PWD}:${PYTHONPATH:-}"
   popd
 
   # Run the benchmark.
-  # The benchmark environment depends on ${CUPY_COMMIT}.
-  export VOLATILE_VIRTUALENV_KEY="${CUPY_COMMIT}"
-  export PIP_NO_DEPS=True
-  export PIP_VERBOSE=True
-  export PIP_LOG=pip.log
+  # Uncomment the following lines to diagnose installation issues.
+  #export PIP_VERBOSE=True
+  #export PIP_LOG=pip.log
   asv run --step 1 "$@" "${CHAINER_COMMIT}"
 }
 
-run_benchmark "$@"
+run_asv "$@"
