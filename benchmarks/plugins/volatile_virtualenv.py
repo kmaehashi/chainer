@@ -18,7 +18,7 @@ class VolatileVirtualenv(Virtualenv):
     def __init__(self, *args, **kwargs):
         key = os.environ.get('VOLATILE_VIRTUALENV_KEY', None)
         if key is None:
-            log.info('Not using volatile virtualenv')
+            log.info('No key specified for volatile virtualenv')
         else:
             log.info('Using volatile virtualenv with key: {}'.format(key))
         self._volatile_key = key
