@@ -62,8 +62,16 @@
     //     "pip+emcee": [""],   // emcee is only available for install with pip.
     // },
     "matrix": {
-        "ideep4py": [],
+        // CuPy requirements.
         "cython": [],
+        "numpy": [],
+        "six": [],
+        "fastrlock": [],
+
+        // Chainer requirements.
+        "filelock": [],
+        "protobuf": [],
+        "ideep4py": [],
 
         // Use CuPy source tree in the current directory.
         "./cupy": [],

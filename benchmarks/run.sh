@@ -27,6 +27,7 @@ function run_benchmark() {
   # Run the benchmark.
   # The benchmark environment depends on ${CUPY_COMMIT}.
   export VOLATILE_VIRTUALENV_KEY="${CUPY_COMMIT}"
+  export PIP_NO_DEPS=True
   export PIP_VERBOSE=True
   export PIP_LOG=pip.log
   asv run --step 1 "$@" "${CHAINER_COMMIT}"
