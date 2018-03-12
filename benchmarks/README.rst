@@ -3,6 +3,8 @@ Chainer Benchmarks
 
 Benchmarking Chainer with Airspeed Velocity.
 
+Note that CuPy earlier than v3.1.0 or v4.0.0b1 are not supported.
+
 Requirements
 ------------
 
@@ -13,6 +15,10 @@ Usage
 -----
 
 .. code-block:: sh
+
+    # Enable ccache for performance (optional).
+    export PATH="/usr/lib/ccache:${PATH}"
+    export NVCC="ccache nvcc"
 
     # Run benchmark against target commit-ish of Chainer and CuPy.
     # Note that specified versions must be a compatible combination.
