@@ -22,7 +22,7 @@ Usage
 
     # Run benchmark against target commit-ish of Chainer and CuPy.
     # Note that specified versions must be a compatible combination.
-    # You can use `get_cupy_version.py` helper tool to get appropriate CuPy
+    # You can use `find_cupy_version.py` helper tool to get appropriate CuPy
     # version for the given Chainer version.
     ./run.sh master master
     ./run.sh v4.0.0b4 v4.0.0b4
