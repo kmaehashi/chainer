@@ -13,6 +13,6 @@ v3.1.0
 "
 
 for CHAINER_TAG in ${TAGS}; do
-  CUPY_TAG=$(./get_cupy_version.py ${CHAINER_TAG})
+  CUPY_TAG=$(./find_cupy_version.py --release ${CHAINER_TAG})
   ./run.sh ${CHAINER_TAG} ${CUPY_TAG} -vvv
 done
