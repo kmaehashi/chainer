@@ -109,6 +109,7 @@ def convert(batch, device):
         elif device < 0:
             return [chainer.dataset.to_device(device, x) for x in batch]
         else:
+            # Array is going to be transferred to GPU.
             xp = cuda.cupy.get_array_module(*batch)
             concat = xp.concatenate(batch, axis=0)
             sections = numpy.cumsum([len(x)
@@ -205,6 +206,8 @@ def main():
                         help='number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
+    parser.add_argument('--ideep', '-I', action='store_true', default=False,
+                        help='use iDeep')
     parser.add_argument('--resume', '-r', default='',
                         help='resume the training from snapshot')
     parser.add_argument('--unit', '-u', type=int, default=1024,
@@ -259,6 +262,9 @@ def main():
     if args.gpu >= 0:
         chainer.backends.cuda.get_device(args.gpu).use()
         model.to_gpu(args.gpu)
+    else:
+        chainer.config.use_ideep = 'auto'
+        model.to_intel64()
 
     # Setup optimizer
     optimizer = chainer.optimizers.Adam()

@@ -35,6 +35,8 @@ def main():
                         help='Frequency of taking a snapshot')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
+    parser.add_argument('--ideep', '-I', action='store_true', default=False,
+                        help='use iDeep')
     parser.add_argument('--out', '-o', default='result',
                         help='Directory to output the result')
     parser.add_argument('--resume', '-r', default='',
@@ -59,6 +61,9 @@ def main():
         # Make a specified GPU current
         chainer.backends.cuda.get_device_from_id(args.gpu).use()
         model.to_gpu()  # Copy the model to the GPU
+    elif args.ideep:
+        chainer.config.use_ideep = 'auto'
+        model.to_intel64()
 
     # Setup an optimizer
     optimizer = chainer.optimizers.Adam()

@@ -180,6 +180,8 @@ def main():
                         help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
+    parser.add_argument('--ideep', '-I', action='store_true', default=False,
+                        help='use iDeep')
     parser.add_argument('--gradclip', '-c', type=float, default=5,
                         help='Gradient norm threshold to clip')
     parser.add_argument('--out', '-o', default='result',
@@ -217,6 +219,9 @@ def main():
         # Make a specified GPU current
         chainer.backends.cuda.get_device_from_id(args.gpu).use()
         model.to_gpu()
+    elif args.ideep:
+        chainer.config.use_ideep = 'auto'
+        model.to_intel64()
 
     # Set up an optimizer
     optimizer = chainer.optimizers.SGD(lr=1.0)
@@ -238,7 +243,7 @@ def main():
     trainer.extend(extensions.LogReport(postprocess=compute_perplexity,
                                         trigger=(interval, 'iteration')))
     trainer.extend(extensions.PrintReport(
-        ['epoch', 'iteration', 'perplexity', 'val_perplexity']
+        ['epoch', 'iteration', 'perplexity', 'val_perplexity', 'elapsed_time']
     ), trigger=(interval, 'iteration'))
     trainer.extend(extensions.ProgressBar(
         update_interval=1 if args.test else 10))
