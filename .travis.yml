@@ -55,13 +55,13 @@ install:
   - pip install mpi4py
   - python setup.py sdist
   - pip install dist/*.tar.gz
-  - travis_wait pip install -U .[travis]
+  - travis_wait pip install -U -e .[travis]
 
 script:
   - flake8
   - autopep8 -r . --diff | tee check_autopep8
   - test ! -s check_autopep8
-  - python -Werror::DeprecationWarning -m compileall -f -q chainer chainermn examples tests docs
+  - python -Wignore::DeprecationWarning:site -Werror::DeprecationWarning -m compileall -f -q chainer chainermn examples tests docs
   - pushd tests
   - pytest -m "not slow and not gpu and not cudnn and not ideep" chainer_tests
   - export OMP_NUM_THREADS=1
