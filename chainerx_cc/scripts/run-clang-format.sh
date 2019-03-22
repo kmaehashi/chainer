@@ -16,6 +16,7 @@ clang_format=clang-format
 
 parallel_jobs=1
 inplace=0
+target_list=
 
 while [ $# -gt 0 ]; do
     o="$1"
@@ -26,6 +27,10 @@ while [ $# -gt 0 ]; do
             ;;
         "--jobs")
             parallel_jobs="$1"
+            shift
+            ;;
+        "--target-list")
+            target_list="$1"
             shift
             ;;
         *)
@@ -41,4 +46,20 @@ else
     cmd=(bash -c 'diff -u {} <('"${clang_format}"' {})')
 fi
 
-find "${root_dir}"/chainerx \( -name '*.cc' -o -name '*.h' -o -name '*.cu' -o -name '*.cuh' \) -type f -print0 | xargs -0 -n1 -P"${parallel_jobs}" -I{} "${cmd[@]}"
+find_all_source() {
+    find "${root_dir}"/chainerx \( -name '*.cc' -o -name '*.h' -o -name '*.cu' -o -name '*.cuh' \) -type f -print0
+}
+
+filter_by_target_list() {
+    grep -z -F -x -f "${target_list}"
+}
+
+dispatch() {
+    xargs -0 -n1 -P"${parallel_jobs}" -I{} "${cmd[@]}"
+}
+
+if [ "${target_list}" != "" ]; then
+    find_all_source | filter_by_target_list | dispatch
+else
+    find_all_source | dispatch
+fi
