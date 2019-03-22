@@ -107,7 +107,13 @@ step_python_style_check() {
 
 
 step_clang_format() {
-    "$CHAINERX_DIR"/scripts/run-clang-format.sh --jobs 4
+    local ARGS="--jobs 4"
+    if [ "${TRAVIS_PULL_REQUEST_BRANCH}" != "" ]; then
+        local TARGETS=/tmp/targets.txt
+        git diff --name-only $(git merge-base HEAD ${TRAVIS_PULL_REQUEST_BRANCH}) --line-prefix="${PWD}/" -z | tee "${TARGETS}"
+        ARGS="${ARGS} --target-list ${TARGETS}"
+    fi
+    "$CHAINERX_DIR"/scripts/run-clang-format.sh ${ARGS}
 }
 
 
