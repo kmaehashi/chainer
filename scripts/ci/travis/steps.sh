@@ -213,7 +213,13 @@ step_chainerx_cpplint() {
 
 
 step_chainerx_clang_format() {
-    "$REPO_DIR"/chainerx_cc/scripts/run-clang-format.sh --jobs "$DEFAULT_JOBS"
+    local ARGS="--jobs ${DEFAULT_JOBS}"
+    if [ "${TRAVIS_PULL_REQUEST_BRANCH}" != "" ]; then
+        local TARGETS=/tmp/targets.txt
+        git diff --name-only $(git merge-base HEAD ${TRAVIS_PULL_REQUEST_BRANCH}) --line-prefix="${PWD}/" -z | tee "${TARGETS}"
+        ARGS="${ARGS} --target-list ${TARGETS}"
+    fi
+    "$REPO_DIR"/chainerx_cc/scripts/run-clang-format.sh ${ARGS}
 }
 
 
