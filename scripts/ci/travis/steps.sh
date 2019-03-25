@@ -213,13 +213,7 @@ step_chainerx_cpplint() {
 
 
 step_chainerx_clang_format() {
-    local ARGS="--jobs ${DEFAULT_JOBS}"
-    if [ "${TRAVIS_PULL_REQUEST_BRANCH}" != "" ]; then
-        local TARGETS=/tmp/targets.txt
-        git diff --name-only $(git merge-base HEAD ${TRAVIS_PULL_REQUEST_BRANCH}) --line-prefix="${PWD}/" -z | tee "${TARGETS}"
-        ARGS="${ARGS} --target-list ${TARGETS}"
-    fi
-    "$REPO_DIR"/chainerx_cc/scripts/run-clang-format.sh ${ARGS}
+    "$REPO_DIR"/chainerx_cc/scripts/run-clang-format.sh --jobs "$DEFAULT_JOBS"
 }
 
 
@@ -230,8 +224,7 @@ step_chainerx_cmake() {
 
     cmake \
         -DCMAKE_BUILD_TYPE=Debug \
-        -DCHAINERX_BUILD_CUDA=OFF \
-        -DCHAINERX_BUILD_TEST=ON \
+        -DCHAINERX_BUILD_CUDA=OFF \ -DCHAINERX_BUILD_TEST=ON \
         -DCHAINERX_BUILD_PYTHON=OFF \
         -DCHAINERX_WARNINGS_AS_ERRORS=ON \
         -DCMAKE_INSTALL_PREFIX="$WORK_DIR"/install_target \
@@ -244,8 +237,17 @@ step_chainerx_cmake() {
 
 step_chainerx_clang_tidy() {
     local target="$1"  # normal or test
+    local args=(${target})
+
+    if [ "${TRAVIS_PULL_REQUEST_BRANCH}" != "" ]; then
+        pushd chainerx
+        local target_list=/tmp/targets.txt
+        git diff --name-only $(git merge-base HEAD ${TRAVIS_PULL_REQUEST_BRANCH}) -z | tee "${target_list}"
+        args+=("--target-list" "${target_list}")
+        popd
+    fi
 
     pushd "$CHAINERX_BUILD_DIR"
-    "$REPO_DIR"/chainerx_cc/scripts/run-clang-tidy.sh "$target"
+    "$REPO_DIR"/chainerx_cc/scripts/run-clang-tidy.sh "${args[@]}"
     popd
 }
