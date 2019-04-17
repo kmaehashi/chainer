@@ -149,6 +149,8 @@ case "${CHAINER_TRAVIS_TEST}" in
                 else
                     echo "Documentation build is skipped as ChainerX is not available.";
                 fi
+
+                run_step non_existent_step
                 ;;
         esac
         ;;
