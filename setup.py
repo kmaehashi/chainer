@@ -179,6 +179,7 @@ setup_kwargs = dict(
         'chainer': ['py.typed'],
     },
     zip_safe=False,
+    python_requires='>=2.7',
     setup_requires=setup_requires,
     install_requires=install_requires,
     tests_require=tests_require,
